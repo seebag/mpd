@@ -319,14 +319,29 @@ playlist_list_open_path(const char *path_fs, GMutex *mutex, GCond *cond,
 	const char *suffix;
 	struct input_stream *is;
 	struct playlist_provider *playlist;
+    char *filename = path_fs;
 
 	assert(path_fs != NULL);
 
-	suffix = uri_get_suffix(path_fs);
+	suffix = uri_get_suffix(filename);
+    if (suffix == NULL) {
+        playlist_plugins_for_each_enabled(plugin) {
+            if (plugin->suffixes != NULL) {
+                const char *filename_try = g_strconcat(path_fs, ".", *plugin->suffixes, NULL);
+                suffix = uri_get_suffix(filename_try);
+                if (suffix != NULL) {
+                    filename = filename_try;
+                    break;
+                }
+                g_free(filename_try);
+            }
+        }
+    }
+
 	if (suffix == NULL || !playlist_suffix_supported(suffix))
 		return NULL;
 
-	is = input_stream_open(path_fs, mutex, cond, &error);
+	is = input_stream_open(filename, mutex, cond, &error);
 	if (is == NULL) {
 		if (error != NULL) {
 			g_warning("%s", error->message);
