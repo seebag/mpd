@@ -62,6 +62,9 @@ bool mpd_despotify_register_callback(void (*cb)(struct despotify_session *, int,
  * @param cb the callback to unregister.
  */
 void mpd_despotify_unregister_callback(void (*cb)(struct despotify_session *, int, void *, void *));
+/** Update song tags
+*/
+struct song * despotify_update_song(struct song* song);
 
 #endif
 

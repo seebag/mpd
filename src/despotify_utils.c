@@ -2,8 +2,10 @@
 #include <despotify.h>
 
 #include "tag.h"
+#include "song.h"
 #include "conf.h"
 #include "despotify_utils.h"
+#include "playlist/despotify_playlist_plugin.h"
 
 static struct despotify_session *g_session;
 static void (*registered_callbacks[8])(struct despotify_session *,
@@ -118,4 +120,38 @@ struct despotify_session *mpd_despotify_get_session(void)
     }
 
 	return g_session;
+}
+
+struct song * despotify_update_song(struct song* song) {
+	struct despotify_session *session = NULL;
+	struct ds_link *link = NULL;
+	struct ds_track *track = NULL;
+
+    if (strlen(song->uri) < 5) {
+        goto error;
+    }
+
+	session = mpd_despotify_get_session();
+	if (!session)
+		goto error;
+
+	/* Get link without spt:// */
+	link = despotify_link_from_uri(song->uri + 6);
+	if (!link) {
+		g_debug("Can't find %s\n", song->uri);
+		goto error;
+	}
+    if (link->type == LINK_TYPE_INVALID) {
+        goto error;
+    }
+
+	track = despotify_link_get_track(session, link);
+	if (!track)
+        goto error;
+    
+	song->tag = mpd_despotify_tag_from_track(track);
+
+    return song;
+error:
+    return NULL;
 }

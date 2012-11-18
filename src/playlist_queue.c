@@ -25,6 +25,9 @@
 #include "playlist.h"
 #include "song.h"
 #include "input_stream.h"
+#include "despotify_utils.h"
+
+#include <string.h>
 
 enum playlist_result
 playlist_load_into_queue(const char *uri, struct playlist_provider *source,
@@ -48,6 +51,18 @@ playlist_load_into_queue(const char *uri, struct playlist_provider *source,
 		song = playlist_check_translate_song(song, base_uri, secure);
 		if (song == NULL)
 			continue;
+
+#ifdef ENABLE_DESPOTIFY
+// Not the right place to do this...
+        if (strcmp(g_uri_parse_scheme(song->uri), "spt") == 0) {
+            g_debug("Despotify update info : %s\n", song->uri);
+            struct song *song_new;
+            song_new = despotify_update_song(song);
+            if (song_new != NULL) {
+                song = song_new;
+            } 
+        }
+#endif
 
 		result = playlist_append_song(dest, pc, song, NULL);
 		song_free(song);
